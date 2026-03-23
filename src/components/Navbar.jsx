@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
-import { Bell } from "lucide-react"; // أيقونة جرس حديثة
+import { Bell, Menu, X } from "lucide-react";
 
 export default function Navbar() {
   const loc = useLocation();
-
   const [user, setUser] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -18,27 +18,33 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      axios
-        .get("http://localhost:8000/api/user", {
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await axios.get("http://localhost:8000/api/user", {
           headers: { Authorization: `Bearer ${token}` },
-        })
-        .then((res) => setUser(res.data))
-        .catch(() => setUser(null));
-    }
+        });
+        setUser(res.data);
+      } catch (err) {
+        setUser(null);
+      }
+    };
+    fetchUser();
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      axios
-        .get("http://localhost:8000/api/notifications", {
+    const fetchNotifications = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await axios.get("http://localhost:8000/api/notifications", {
           headers: { Authorization: `Bearer ${token}` },
-        })
-        .then((res) => setNotifications(res.data))
-        .catch(() => {});
-    }
+        });
+        setNotifications(res.data);
+      } catch (err) {}
+    };
+    fetchNotifications();
   }, []);
 
   const logout = () => {
@@ -47,16 +53,15 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white border-b px-8 py-4 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-
+    <nav className="bg-white border-b px-4 md:px-8 py-4 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto flex items-center justify-between relative">
         {/* Logo */}
         <div className="flex items-center gap-2">
           <span className="text-teal-500 text-xl">⚕</span>
           <h1 className="font-semibold text-gray-700 text-lg">KidneyAI</h1>
         </div>
 
-        {/* Links */}
+        {/* Desktop Links */}
         <ul className="hidden md:flex gap-8 text-gray-600 text-sm">
           {navLinks.map((link) => (
             <li key={link.path}>
@@ -65,7 +70,7 @@ export default function Navbar() {
                 className={`${
                   loc.pathname === link.path
                     ? "text-[#2e4b8b] font-semibold"
-                    : "hover:text-[#2e4b8b]-500"
+                    : "hover:text-[#2e4b8b]"
                 }`}
               >
                 {link.name}
@@ -75,8 +80,7 @@ export default function Navbar() {
         </ul>
 
         {/* Right Section */}
-        <div className="flex items-center gap-5">
-
+        <div className="flex items-center gap-3 md:gap-5">
           {/* Notifications */}
           {user && (
             <div className="relative">
@@ -92,7 +96,6 @@ export default function Navbar() {
                 )}
               </button>
 
-              {/* Dropdown */}
               <div
                 className={`absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg overflow-y-auto max-h-96 transition-all duration-200
                   ${notificationsOpen
@@ -131,7 +134,6 @@ export default function Navbar() {
               >
                 Sign In
               </Link>
-
               <Link
                 to="/Signup"
                 className="px-5 py-2 bg-[#2e4b8b] text-white rounded-full text-sm font-medium hover:bg-[#243d73] transition-all duration-300 shadow-md hover:shadow-lg"
@@ -144,7 +146,6 @@ export default function Navbar() {
           {/* Logged User */}
           {user && (
             <div className="relative">
-              {/* Profile Card */}
               <div
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-3 bg-[#708fd1] text-white px-4 py-2 rounded-xl cursor-pointer shadow-md hover:bg-[#3f5fa8] transition"
@@ -168,7 +169,6 @@ export default function Navbar() {
                 </svg>
               </div>
 
-              {/* Dropdown */}
               <div
                 className={`absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300
                   ${profileOpen
@@ -198,7 +198,39 @@ export default function Navbar() {
             </div>
           )}
 
+          {/* Mobile Hamburger */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-md hover:bg-gray-100 transition"
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        <ul
+          className={`md:hidden absolute top-full left-0 w-full bg-white flex flex-col gap-2 overflow-hidden transition-all duration-300 ${
+            mobileMenuOpen ? "max-h-96 p-4" : "max-h-0"
+          }`}
+        >
+          {navLinks.map((link) => (
+            <li key={link.path}>
+              <Link
+                to={link.path}
+                className={`block py-2 ${
+                  loc.pathname === link.path
+                    ? "text-[#2e4b8b] font-semibold"
+                    : "hover:text-[#2e4b8b]"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {link.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </nav>
   );
